@@ -109,7 +109,7 @@ class SourceSeeder extends Seeder
                 'name' => 'Facebook Posts',
                 'actor_id' => 'scraper_one/facebook-posts-search',
                 'input_template' => [
-                    'keyword' => '{keywords} {location}',
+                    'query' => '{keywords} {location}',
                     'search_type' => 'posts',
                     'results_limit' => 50,
                     'filter_by_recent_posts' => true,
