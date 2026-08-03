@@ -61,12 +61,14 @@ class ApiSmokeTest extends TestCase
         $response = $this->actingAs(User::factory()->create())
             ->getJson('/api/sources')
             ->assertOk()
-            ->assertJsonCount(3, 'data');
+            ->assertJsonCount(5, 'data');
 
         $names = array_column($response->json('data'), 'name');
         $this->assertContains('LinkedIn Jobs', $names);
         $this->assertContains('Indeed', $names);
         $this->assertContains('Wuzzuf', $names);
+        $this->assertContains('LinkedIn Posts', $names);
+        $this->assertContains('Facebook Posts', $names);
     }
 
     public function test_schedule_settings_validation_rejects_min_not_below_max(): void

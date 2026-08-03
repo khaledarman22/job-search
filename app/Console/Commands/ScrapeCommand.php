@@ -75,11 +75,24 @@ class ScrapeCommand extends Command
 
         foreach ($sources as $source) {
             [$location, $country] = $this->pickLocation($settings, $source);
-            $keywords = $this->pickKeywords($settings, $source);
-            try {
-                $this->startSource($client, $source, $keywords, $location, $country);
-            } catch (ApifyException $e) {
-                $this->error("Source [{$source->name}]: {$e->getMessage()}");
+            $keywordsString = $this->pickKeywords($settings, $source);
+
+            // تقسيم الكلمات المفتاحية بالفواصل أو السطور المتعددة لتشغيل السحب لكل منها على حدة
+            $keywordList = array_filter(
+                array_map('trim', preg_split('/[,;\n\r]+/', $keywordsString)),
+                fn ($kw) => $kw !== ''
+            );
+
+            if (empty($keywordList)) {
+                $keywordList = [ (string) ($source->default_keywords ?? '') ];
+            }
+
+            foreach ($keywordList as $keywords) {
+                try {
+                    $this->startSource($client, $source, $keywords, $location, $country);
+                } catch (ApifyException $e) {
+                    $this->error("Source [{$source->name}] with keywords [{$keywords}]: {$e->getMessage()}");
+                }
             }
         }
 

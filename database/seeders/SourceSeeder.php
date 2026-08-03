@@ -84,6 +84,50 @@ class SourceSeeder extends Seeder
                 'max_items' => 50,
                 'enabled' => true,
             ],
+            [
+                'name' => 'LinkedIn Posts',
+                'actor_id' => 'curious_coder/linkedin-post-search-scraper',
+                'input_template' => [
+                    'searchQuery' => '{keywords} {location}',
+                    'limit' => 50,
+                ],
+                'field_map' => [
+                    'title' => 'authorName',
+                    'url' => 'postUrl',
+                    'external_id' => 'postId',
+                    'company_name' => 'authorName',
+                    'location' => 'location',
+                    'description' => 'postText',
+                    'posted_at' => 'postDate',
+                ],
+                'default_keywords' => 'hiring Laravel Developer',
+                'default_location' => 'Egypt',
+                'max_items' => 50,
+                'enabled' => true,
+            ],
+            [
+                'name' => 'Facebook Posts',
+                'actor_id' => 'scraper_one/facebook-posts-search',
+                'input_template' => [
+                    'keyword' => '{keywords} {location}',
+                    'search_type' => 'posts',
+                    'results_limit' => 50,
+                    'filter_by_recent_posts' => true,
+                ],
+                'field_map' => [
+                    'title' => 'pageName',
+                    'url' => 'url',
+                    'external_id' => 'postId',
+                    'company_name' => 'pageName',
+                    'location' => 'location',
+                    'description' => 'text',
+                    'posted_at' => 'time',
+                ],
+                'default_keywords' => 'hiring Laravel Developer',
+                'default_location' => 'Egypt',
+                'max_items' => 50,
+                'enabled' => true,
+            ],
         ];
 
         foreach ($sources as $source) {

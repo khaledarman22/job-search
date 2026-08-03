@@ -39,10 +39,26 @@ class JobPostController extends Controller
                     : $q->whereDoesntHave('company.contacts', $emailContacts),
             )
             ->when($filters['q'] ?? null, function ($q, string $term): void {
-                $like = '%'.$term.'%';
-                $q->where(fn ($w) => $w
-                    ->where('title', 'like', $like)
-                    ->orWhereHas('company', fn ($c) => $c->where('name', 'like', $like)));
+                // تقسيم كلمة البحث بالفواصل أو الفاصلة المنقوطة للبحث المتعدد
+                $terms = array_filter(
+                    array_map('trim', preg_split('/[,;]+/', $term)),
+                    fn ($t) => $t !== ''
+                );
+
+                if (empty($terms)) {
+                    $terms = [$term];
+                }
+
+                $q->where(function ($w) use ($terms): void {
+                    foreach ($terms as $index => $t) {
+                        $like = '%'.$t.'%';
+                        $w->where(function ($inner) use ($like): void {
+                            $inner->where('title', 'like', $like)
+                                  ->orWhere('description', 'like', $like)
+                                  ->orWhereHas('company', fn ($c) => $c->where('name', 'like', $like));
+                        }, null, null, $index === 0 ? 'and' : 'or');
+                    }
+                });
             })
             ->orderByDesc('id')
             ->paginate(20)
