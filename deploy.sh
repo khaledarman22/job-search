@@ -1,34 +1,44 @@
 #!/bin/bash
 set -e
 
-echo "Deploying application..."
+SERVER="ubuntu@54.93.107.177"
+KEY="~/Downloads/SOMA.pem"
+REMOTE_DIR="/var/www/job-search"
 
-# Enter maintenance mode
-php artisan down || true
+echo "Deploying to production..."
 
-# Update codebase
-git pull origin main
+# Sync files (excluding git, node_modules, vendor, and local env)
+rsync -avz --exclude '.git' --exclude 'node_modules' --exclude 'vendor' --exclude '.env' -e "ssh -o StrictHostKeyChecking=no -i $KEY" ./ $SERVER:$REMOTE_DIR/
 
-# Install PHP dependencies
-composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+echo "Running post-deploy commands on server..."
 
-# Run database migrations
-php artisan migrate --force
+ssh -o StrictHostKeyChecking=no -i $KEY $SERVER << 'SSHEOF'
+  cd /var/www/job-search
+  
+  # Maintenance mode
+  php artisan down || true
+  
+  # Install PHP dependencies
+  composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+  
+  # Install Node dependencies and build
+  npm ci
+  npm run build
+  
+  # Run Migrations
+  php artisan migrate --force
+  
+  # Clear and cache configurations
+  php artisan optimize:clear
+  php artisan config:cache
+  php artisan route:cache
+  php artisan view:cache
+  
+  # Restart queues
+  php artisan queue:restart || true
+  
+  # Exit Maintenance mode
+  php artisan up
+SSHEOF
 
-# Clear caches
-php artisan optimize:clear
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
-# Install Node dependencies and build assets
-npm ci
-npm run build
-
-# Restart queues
-php artisan queue:restart || true
-
-# Exit maintenance mode
-php artisan up
-
-echo "Application deployed!"
+echo "Deployed successfully!"
