@@ -29,9 +29,16 @@ class TemplateRenderer
     {
         $job = $email->jobPost;
 
+        $companyName = $email->company?->name ?? $email->contact?->company?->name ?? '';
+        $genericDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'mail.com', 'live.com', 'msn.com'];
+        if (in_array(strtolower($companyName), $genericDomains, true) || str_contains($companyName, '@')) {
+            $companyName = '';
+        }
+        $companyName = $companyName ?: 'your company';
+
         return array_merge($this->profileContext(), [
-            'company' => $email->company?->name ?? $email->contact?->company?->name ?? 'your company',
-            'job_title' => $job?->title ?? 'open',
+            'company' => $companyName,
+            'job_title' => $job?->title ?: 'open',
             'job_url' => $job?->url ?? '',
             'contact_name' => $email->contact?->name ?: 'فريق التوظيف',
         ]);
