@@ -7,8 +7,8 @@ REMOTE_DIR="/var/www/job-search"
 
 echo "Deploying to production..."
 
-# Sync files (excluding git, node_modules, vendor, env, and public/hot)
-rsync -avz --exclude '.git' --exclude 'node_modules' --exclude 'vendor' --exclude '.env' --exclude 'public/hot' -e "ssh -o StrictHostKeyChecking=no -i $KEY" ./ $SERVER:$REMOTE_DIR/
+# Sync files
+rsync -avz --exclude '.git' --exclude 'node_modules' --exclude 'vendor' --exclude '.env' --exclude 'public/hot' --exclude 'bootstrap/cache/' -e "ssh -o StrictHostKeyChecking=no -i $KEY" ./ $SERVER:$REMOTE_DIR/
 
 echo "Running post-deploy commands on server..."
 
@@ -17,6 +17,9 @@ ssh -o StrictHostKeyChecking=no -i $KEY $SERVER << 'SSHEOF'
   
   # Maintenance mode
   php artisan down || true
+  
+  # Clear old cache to avoid class not found errors during composer install
+  rm -f bootstrap/cache/*.php
   
   # Install PHP dependencies
   composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
