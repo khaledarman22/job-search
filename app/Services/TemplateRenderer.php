@@ -19,6 +19,9 @@ class TemplateRenderer
             $template = str_replace('{'.$key.'}', (string) $value, $template);
         }
 
+        // إزالة أي متغيرات متبقية بين أقواس {} لم يتم استبدالها لكي لا تظهر كنص للمستخدم
+        $template = preg_replace('/\{[a-zA-Z0-9_]+\}/', '', $template);
+
         return $template;
     }
 
@@ -27,8 +30,8 @@ class TemplateRenderer
         $job = $email->jobPost;
 
         return array_merge($this->profileContext(), [
-            'company' => $email->company?->name ?? $email->contact?->company?->name ?? '',
-            'job_title' => $job?->title ?? '',
+            'company' => $email->company?->name ?? $email->contact?->company?->name ?? 'your company',
+            'job_title' => $job?->title ?? 'open',
             'job_url' => $job?->url ?? '',
             'contact_name' => $email->contact?->name ?: 'فريق التوظيف',
         ]);
