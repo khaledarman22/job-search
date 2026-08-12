@@ -132,7 +132,10 @@ class MailerService
             return $body;
         }
 
-        return '<div dir="auto" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.8;">'
+        // تقليل المسافات الفارغة المتتالية (لو أكتر من 2 نخليها 2 بس)
+        $body = preg_replace("/(\r?\n){3,}/", "\n\n", $body);
+
+        return '<div dir="auto" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;">'
             .nl2br($body)
             .'</div>';
     }
