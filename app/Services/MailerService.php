@@ -132,11 +132,17 @@ class MailerService
             return $body;
         }
 
-        // تقليل المسافات الفارغة المتتالية (لو أكتر من 2 نخليها 2 بس)
-        $body = preg_replace("/(\r?\n){3,}/", "\n\n", $body);
+        // إذا كان النص يحتوي على وسوم HTML هيكلية، لا نستخدم nl2br لتجنب المسافات الزائدة
+        $isHtml = preg_match('/<\s*(p|div|ul|ol|li|br|table|h[1-6])[\s>]/i', $body);
+
+        if (! $isHtml) {
+            // تقليل المسافات الفارغة المتتالية
+            $body = preg_replace("/(\r?\n){3,}/", "\n\n", $body);
+            $body = nl2br($body);
+        }
 
         return '<div dir="auto" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;">'
-            .nl2br($body)
+            .$body
             .'</div>';
     }
 }
