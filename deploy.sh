@@ -21,6 +21,9 @@ ssh -o StrictHostKeyChecking=no -i $KEY $SERVER << 'SSHEOF'
   # Clear old cache to avoid class not found errors during composer install
   rm -f bootstrap/cache/*.php
   
+  # Ensure hot file is deleted so production serves built assets
+  rm -f public/hot
+  
   # Install PHP dependencies
   composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
   
