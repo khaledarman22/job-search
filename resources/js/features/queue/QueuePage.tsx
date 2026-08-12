@@ -23,6 +23,8 @@ import {
     useReorderQueue,
     useRequeueEmail,
     useSendingNow,
+    useSendNowEmail,
+    useAddManualEmail,
 } from '@/api/queries/emails';
 import type { OutreachEmail } from '@/api/types';
 import { CountdownTimer } from '@/components/shared/CountdownTimer';
@@ -36,7 +38,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Tabs } from '@/components/ui/Tabs';
 import { useToast } from '@/components/ui/Toast';
-import { IconClock, IconGrip, IconPause, IconPlay, IconQueue, IconRefresh, IconX } from '@/components/ui/icons';
+import { IconClock, IconGrip, IconPause, IconPlay, IconQueue, IconRefresh, IconX, IconSend, IconPlus } from '@/components/ui/icons';
 import { formatDateTime, timeAgo } from '@/lib/format';
 import { t } from '@/lib/i18n';
 
@@ -120,9 +122,13 @@ function QueueRowContent({ email }: { email: OutreachEmail }) {
 function SortableQueueRow({
     email,
     onCancel,
+    onSendNow,
+    isSendingNow,
 }: {
     email: OutreachEmail;
     onCancel: (email: OutreachEmail) => void;
+    onSendNow: (email: OutreachEmail) => void;
+    isSendingNow: boolean;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: email.id,
@@ -148,6 +154,15 @@ function SortableQueueRow({
             <QueueRowContent email={email} />
             <button
                 type="button"
+                title="إرسال الآن"
+                disabled={isSendingNow}
+                onClick={() => onSendNow(email)}
+                className="shrink-0 rounded-md p-1.5 text-indigo-500 hover:bg-indigo-50 disabled:opacity-50"
+            >
+                <IconSend className="size-4" />
+            </button>
+            <button
+                type="button"
                 title={t.queue.remove}
                 onClick={() => onCancel(email)}
                 className="shrink-0 rounded-md p-1.5 text-slate-300 hover:bg-red-50 hover:text-red-500"
@@ -163,8 +178,11 @@ function QueueTab() {
     const { data: sendingData } = useSendingNow();
     const reorder = useReorderQueue();
     const cancelEmail = useCancelEmail();
+    const sendNow = useSendNowEmail();
+    const addManual = useAddManualEmail();
     const { toast } = useToast();
     const [cancelTarget, setCancelTarget] = useState<OutreachEmail | null>(null);
+    const [manualEmail, setManualEmail] = useState('');
 
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
     const items = queueData?.data ?? [];
@@ -197,8 +215,49 @@ function QueueTab() {
         });
     };
 
+    const handleSendNow = (email: OutreachEmail) => {
+        sendNow.mutate(email.id, {
+            onSuccess: () => toast('جاري الإرسال الآن...'),
+            onError: (err) => toast(errorMessage(err), 'error'),
+        });
+    };
+
+    const handleAddManual = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!manualEmail.trim()) return;
+        addManual.mutate(manualEmail, {
+            onSuccess: (data) => {
+                if (data.stats?.queued > 0) {
+                    toast('تمت الإضافة للطابور بنجاح.');
+                    setManualEmail('');
+                } else if (data.stats?.duplicates > 0) {
+                    toast('الإيميل موجود بالفعل.', 'error');
+                } else {
+                    toast('لم يتم الإضافة للطابور. تأكد من صحة الإيميل.', 'error');
+                }
+            },
+            onError: (err) => toast(errorMessage(err), 'error'),
+        });
+    };
+
     return (
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
+            <form onSubmit={handleAddManual} className="flex gap-2 border-b border-slate-200 bg-slate-50 p-3">
+                <input
+                    type="email"
+                    required
+                    placeholder="إضافة إيميل يدوياً..."
+                    className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 flex-1 min-w-0"
+                    value={manualEmail}
+                    onChange={(e) => setManualEmail(e.target.value)}
+                    dir="ltr"
+                />
+                <Button type="submit" size="sm" loading={addManual.isPending} variant="secondary">
+                    <IconPlus className="size-4" />
+                    إضافة
+                </Button>
+            </form>
+
             {sendingItems.map((email) => (
                 <div
                     key={email.id}
@@ -227,7 +286,13 @@ function QueueTab() {
                     <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                         <ul>
                             {items.map((email) => (
-                                <SortableQueueRow key={email.id} email={email} onCancel={setCancelTarget} />
+                                <SortableQueueRow 
+                                    key={email.id} 
+                                    email={email} 
+                                    onCancel={setCancelTarget} 
+                                    onSendNow={handleSendNow} 
+                                    isSendingNow={sendNow.isPending && sendNow.variables === email.id} 
+                                />
                             ))}
                         </ul>
                     </SortableContext>

@@ -90,6 +90,21 @@ class OutreachEmailController extends Controller
         return response()->json(['email' => self::shape($email->load(self::RELATIONS))]);
     }
 
+    public function sendNow(OutreachEmail $email, OutreachService $outreach): JsonResponse
+    {
+        if ($email->status !== OutreachStatus::Queued) {
+            return response()->json(['message' => 'الإرسال الفوري متاح للرسائل اللي في الطابور فقط.'], 409);
+        }
+
+        try {
+            $updated = $outreach->sendImmediate($email);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'فشل الإرسال: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json(['email' => self::shape($updated->load(self::RELATIONS))]);
+    }
+
     public function requeue(OutreachEmail $email, OutreachService $outreach): JsonResponse
     {
         $allowed = [OutreachStatus::Failed, OutreachStatus::Cancelled, OutreachStatus::Sent];

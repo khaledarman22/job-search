@@ -159,6 +159,42 @@ class OutreachService
         return $candidate;
     }
 
+    /** إرسال فوري لرسالة موجودة في الطابور (يستخدم عبر زرار الإرسال الفوري) */
+    public function sendImmediate(OutreachEmail $candidate): OutreachEmail
+    {
+        $claimed = OutreachEmail::whereKey($candidate->id)
+            ->where('status', OutreachStatus::Queued->value)
+            ->update(['status' => OutreachStatus::Sending->value]);
+
+        if ($claimed === 0) {
+            throw new \RuntimeException('الرسالة لم تعد في الطابور أو بيتم إرسالها حاليًا.');
+        }
+
+        $candidate->refresh();
+
+        try {
+            $this->mailer->send($candidate);
+        } catch (TransportException $e) {
+            if (! $this->isRecipientRejection($e)) {
+                $candidate->forceFill(['status' => OutreachStatus::Queued])->save();
+                $this->pause('SMTP: '.Str::limit($e->getMessage(), 180));
+                throw $e;
+            }
+            return $this->recordSendFailure($candidate, $e, permanent: true);
+        } catch (\Throwable $e) {
+            return $this->recordSendFailure($candidate, $e);
+        }
+
+        $candidate->forceFill([
+            'status' => OutreachStatus::Sent,
+            'sent_at' => Carbon::now(),
+            'error' => null,
+        ])->save();
+        $candidate->contact?->update(['status' => ContactStatus::Contacted]);
+
+        return $candidate;
+    }
+
     /**
      * TransportException بترمى للاتنين: أعطال الاتصال/المصادقة (نظامية)
      * ورفض المستلم الواحد (550/551/553). الأولى توقف الإرسال كله، التانية

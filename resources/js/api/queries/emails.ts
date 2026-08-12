@@ -80,6 +80,29 @@ export function useRequeueEmail() {
     });
 }
 
+export function useSendNowEmail() {
+    const invalidate = useInvalidateEmails();
+    return useMutation({
+        mutationFn: async (id: number) =>
+            (await api.post<{ email: OutreachEmail }>(`/api/emails/${id}/send-now`)).data.email,
+        onSuccess: invalidate,
+    });
+}
+
+export function useAddManualEmail() {
+    const invalidate = useInvalidateEmails();
+    return useMutation({
+        mutationFn: async (emailStr: string) => {
+            const res = await api.post<{ ok: boolean; stats: any }>('/api/contacts/import', {
+                emails: emailStr,
+                queue: true,
+            });
+            return res.data;
+        },
+        onSuccess: invalidate,
+    });
+}
+
 export function useMarkReplied() {
     const invalidate = useInvalidateEmails();
     return useMutation({

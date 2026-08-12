@@ -47,6 +47,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/emails', [OutreachEmailController::class, 'index']);
     Route::get('/emails/{email}', [OutreachEmailController::class, 'show']);
     Route::post('/emails/{email}/cancel', [OutreachEmailController::class, 'cancel']);
+    Route::post('/emails/{email}/send-now', [OutreachEmailController::class, 'sendNow']);
     Route::post('/emails/{email}/requeue', [OutreachEmailController::class, 'requeue']);
     Route::patch('/emails/{email}', [OutreachEmailController::class, 'update']);
     Route::patch('/queue/reorder', [OutreachEmailController::class, 'reorder']);
