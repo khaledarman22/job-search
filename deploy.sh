@@ -7,8 +7,8 @@ REMOTE_DIR="/var/www/job-search"
 
 echo "Deploying to production..."
 
-# Sync files (excluding git, node_modules, vendor, and local env)
-rsync -avz --exclude '.git' --exclude 'node_modules' --exclude 'vendor' --exclude '.env' -e "ssh -o StrictHostKeyChecking=no -i $KEY" ./ $SERVER:$REMOTE_DIR/
+# Sync files (excluding git, node_modules, vendor, env, and public/hot)
+rsync -avz --exclude '.git' --exclude 'node_modules' --exclude 'vendor' --exclude '.env' --exclude 'public/hot' -e "ssh -o StrictHostKeyChecking=no -i $KEY" ./ $SERVER:$REMOTE_DIR/
 
 echo "Running post-deploy commands on server..."
 
